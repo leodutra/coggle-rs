@@ -8,6 +8,8 @@ use std::{error::Error, fmt::{self, Display, Formatter}};
 use reqwest::Response;
 use serde::{Serialize, de::DeserializeOwned, Deserialize};
 
+const MAX_TEXT_LENGTH: usize = 3000;
+
 #[derive(Debug)]
 // #[non_exhaustive]
 pub enum CoggleError {
@@ -42,6 +44,12 @@ struct CoggleNodeResource {
     pub children: Vec<CoggleNodeResource>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct NodeUpdateProps {
+    text: Option<String>,
+    offset: Option<CoggleOffset>,
+    parent: Option<String>,
+}
 
 pub struct CoggleApiNode<'a> {
     pub diagram: &'a CoggleApiDiagram<'a>,
@@ -73,8 +81,8 @@ impl <'a> CoggleApiNode<'a> {
     }
 
     pub async fn add_child(&self, text: &str, offset: Option<&CoggleOffset>) -> Result<CoggleApiNode<'_>, Box<dyn Error>>{
-        if text.len() > 3000 {
-            return Err(Box::new(CoggleError::TextTooLong) as Box<dyn Error>);
+        if text.len() > MAX_TEXT_LENGTH {
+            return Err(Box::new(CoggleError::TextTooLong));
         }
 
         #[derive(Serialize)]
@@ -84,25 +92,72 @@ impl <'a> CoggleApiNode<'a> {
             text: String,
         }
         let body = Body {
-            parent: self.id,
+            parent: self.id.clone(),
             offset: offset.map(|x| *x),
             text: text.to_owned(),
         };
-        let result = self.diagram.api_client.post(
+        let node_resource = self.diagram.api_client.post(
             &self.replace_ids("/api/1/diagrams/:diagram/nodes"),
             "",
             &body
-        ).await;
-        result.map(|node_resource| {
-            let api_node = CoggleApiNode::<'static>::new(self.diagram, node_resource);
-            api_node.parent_id = Some(self.id);
-            api_node
-        }).map_err(Box::new)
+        ).await?
+        .json()
+        .await?;
+        let mut api_node = CoggleApiNode::new(self.diagram, &node_resource);
+        api_node.parent_id = Some(self.id.clone());
+        Ok(api_node)
     }
 
-    pub async fn set_text(&self, text) {
-        this.update({})
+    pub async fn update(&self, properties: NodeUpdateProps) -> Result<CoggleApiNode<'_>, Box<dyn Error>> {
+        if let Some(text) = &properties.text {
+            if text.len() > MAX_TEXT_LENGTH {
+                return Err(Box::new(CoggleError::TextTooLong));
+            }
+        }
+
+        // #[derive(Serialize)]
+        // struct Body {
+        //     parent: String,
+        //     offset: Option<CoggleOffset>,
+        //     text: String,
+        // }
+        // let body = Body {
+        //     parent: self.id,
+        //     offset: properties.offset,
+        //     text: properties.text.to_owned(),
+        // };
+        let node_resource = self.diagram.api_client.post(
+            &self.replace_ids("/api/1/diagrams/:diagram/nodes"),
+            "",
+            &properties
+        ).await?
+        .json()
+        .await?;
+        let mut api_node = CoggleApiNode::new(self.diagram, &node_resource);
+        api_node.parent_id = Some(self.id);
+        Ok(api_node)
     }
+
+    pub async fn set_text(&self, text: &str) {
+        self.update(CoggleNodeResourcePartial { 
+            text: Some(text.to_owned()),
+            ..Default::default()
+        })
+    }
+
+    pub async fn r#move(&self, offset: &CoggleOffset) {
+        self.update(CoggleNodeResourcePartial { 
+            offset: Some(offset.clone()),
+            ..Default::default()
+        })
+    }
+
+    pub async fn remove(&self) {
+        self.diagram.api_client.delete(
+            self.replace_ids("/api/1/diagrams/:diagram/nodes/:node"),
+            ""
+        )
+    } 
 }
 
 pub struct CoggleApiDiagram<'a> {
@@ -114,9 +169,9 @@ pub struct CoggleApiDiagram<'a> {
 impl CoggleApiDiagram<'_> {
     pub fn new(options) -> Self {
         CoggleApiDiagram {
-            api_client
-            id
-            title
+            api_client: 
+            id: 
+            title: 
         }
     }
 
@@ -153,7 +208,7 @@ pub struct CoggleApi {
 impl CoggleApi {
 
         // FIXME: querystring
-    pub async fn post<T: Serialize>(&self, endpoint: &str, query_string: &str, body: &T) -> Result<Response, Box<dyn Error>> {
+    pub async fn post<T: Serialize>(&self, endpoint: &str, query_string: &str, body: &T) -> Result<Response, impl Error> {
         let prefixed_query = if query_string.starts_with('&') { 
             query_string.to_owned()
         } else {
@@ -166,7 +221,36 @@ impl CoggleApi {
     }
 
     // FIXME: querystring
-    pub async fn get<'de, T: DeserializeOwned>(&self, endpoint: &str, query_string: &str) -> Result<T, impl Error> {
+    pub async fn put<'de, T: Serialize + DeserializeOwned>(&self, endpoint: &str, query_string: &str, body: &T) -> Result<T, impl Error> {
+        let prefixed_query = if query_string.starts_with('&') { 
+            query_string.to_owned()
+        } else {
+            '&'.to_string() + query_string
+        };
+        HTTP_CLIENT.put(self.base_url.to_owned() + endpoint + "?access_token=" + &self.token + &prefixed_query)
+            .json(&body)
+            .send()
+            .await?
+            .json()
+            .await
+    }
+
+    // FIXME: querystring
+    pub async fn get<T: DeserializeOwned>(&self, endpoint: &str, query_string: &str) -> Result<T, impl Error> {
+        let prefixed_query = if query_string.starts_with('&') { 
+            query_string.to_owned()
+        } else {
+            '&'.to_string() + query_string
+        };
+        HTTP_CLIENT.get(self.base_url.to_owned() + endpoint + "?access_token=" + &self.token + &prefixed_query)
+            .send()
+            .await?
+            .json()
+            .await
+    }
+
+    // FIXME: querystring
+    pub async fn delete<T: DeserializeOwned>(&self, endpoint: &str, query_string: &str) -> Result<T, impl Error> {
         let prefixed_query = if query_string.starts_with('&') { 
             query_string.to_owned()
         } else {
