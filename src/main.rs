@@ -123,9 +123,9 @@ impl<'a> CoggleApiNode<'a> {
             text: &'a str,
         }
         let body = Body {
-            parent: &*self.id,
+            parent: &self.id,
             offset,
-            text: &*text,
+            text,
         };
         let node_resource = self
             .diagram
@@ -212,27 +212,43 @@ impl<'a> CoggleApiDiagram<'a> {
     }
 
     pub fn replace_id(&self, url: &str) -> String {
-        // ok
         url.replacen(":diagram", &self.id, 1)
     }
 
     pub fn web_url(&self) -> String {
         self.replace_id(&(self.api_client.base_url.clone() + "/diagram/:diagram"))
-        // ok
     }
 
-    pub async fn get_nodes(&self) -> Result<Vec<CoggleApiNode<'_>>, impl Error> {
-        let result = self
+    pub async fn get_nodes(&self) -> Result<Vec<CoggleApiNode<'_>>, Box<dyn Error>> {
+        let node_resources: Vec<CoggleNodeResource> = self
             .api_client
             .get(&self.replace_id("/api/1/diagrams/:diagram/nodes"), "")
-            .await;
+            .await?;
 
-        result.map(|node_resources: Vec<CoggleNodeResource>| {
-            node_resources
-                .iter()
-                .map(|node_resource| CoggleApiNode::new(self, node_resource))
-                .collect()
-        })
+        let nodes = node_resources
+            .iter()
+            .map(|node_resource| CoggleApiNode::new(self, node_resource))
+            .collect();
+        Ok(nodes)
+    }
+
+    pub async fn arrange(&self) -> Result<Vec<CoggleApiNode<'_>>, Box<dyn Error>> {
+        #[derive(Serialize)]
+        struct Body {}
+        let node_resources: Vec<CoggleNodeResource> = self
+            .api_client
+            .put(
+                &self.replace_id("/api/1/diagrams/:diagram/nodes"),
+                "action=arrange",
+                &Body {},
+            )
+            .await?;
+            
+        let nodes = node_resources
+            .iter()
+            .map(|node_resource| CoggleApiNode::new(self, node_resource))
+            .collect();
+        Ok(nodes)
     }
 }
 
@@ -269,12 +285,12 @@ impl CoggleApi {
     }
 
     // FIXME: querystring
-    pub async fn put<'de, T: Serialize + DeserializeOwned>(
+    pub async fn put<'de, TBody: Serialize, TResult: DeserializeOwned>(
         &self,
         endpoint: &str,
         query_string: &str,
-        body: &T,
-    ) -> Result<T, impl Error> {
+        body: &TBody,
+    ) -> Result<TResult, impl Error> {
         let prefixed_query = if query_string.starts_with('&') {
             query_string.to_owned()
         } else {
