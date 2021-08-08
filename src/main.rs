@@ -62,7 +62,7 @@ struct CoggleNodeResource {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct NodeUpdateProps {
+pub struct CoggleNodeUpdateProps {
     pub text: Option<String>,
     pub offset: Option<CoggleOffset>,
     pub parent: Option<String>,
@@ -135,7 +135,7 @@ impl<'a> CoggleApiNode<'a> {
 
     pub async fn update(
         &self,
-        properties: NodeUpdateProps,
+        properties: CoggleNodeUpdateProps,
     ) -> Result<CoggleApiNode<'_>, Box<dyn Error>> {
         if let Some(text) = &properties.text {
             if text.len() > MAX_TEXT_LENGTH {
@@ -160,7 +160,7 @@ impl<'a> CoggleApiNode<'a> {
     }
 
     pub async fn set_text(&self, text: &str) -> Result<CoggleApiNode<'_>, Box<dyn Error>> {
-        self.update(NodeUpdateProps {
+        self.update(CoggleNodeUpdateProps {
             text: Some(text.to_owned()),
             ..Default::default()
         })
@@ -168,7 +168,7 @@ impl<'a> CoggleApiNode<'a> {
     }
 
     pub async fn r#move(&self, offset: &CoggleOffset) -> Result<CoggleApiNode<'_>, Box<dyn Error>> {
-        self.update(NodeUpdateProps {
+        self.update(CoggleNodeUpdateProps {
             offset: Some(offset.clone()),
             ..Default::default()
         })
