@@ -68,6 +68,16 @@ pub struct CoggleNodeUpdateProps {
     pub parent: Option<String>,
 }
 
+impl From<CoggleApiNode<'_>> for CoggleNodeUpdateProps {
+    fn from(node: CoggleApiNode) -> Self {
+        CoggleNodeUpdateProps {
+            parent: node.parent_id.into(),
+            text: node.text.into(),
+            offset: node.offset.into(),
+        }
+    }
+}
+
 pub struct CoggleApiNode<'a> {
     pub diagram: &'a CoggleApiDiagram<'a>,
     pub id: String,
