@@ -2,10 +2,9 @@
 // use http::HTTP_CLIENT;
 use regex::Regex;
 use reqwest::Response;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use std::{
     error::Error,
-    fmt::{self, Display, Formatter},
 };
 
 use self::{http::HTTP_CLIENT, diagram::{CoggleApiDiagram, CoggleDiagramResource}, error::CoggleError};

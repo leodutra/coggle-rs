@@ -1,11 +1,10 @@
 
 // use http::HTTP_CLIENT;
-use regex::Regex;
-use reqwest::Response;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fmt::{self, Display, Formatter},
 };
 
 use super::{error::CoggleError, misc::CoggleOffset, diagram::CoggleApiDiagram};

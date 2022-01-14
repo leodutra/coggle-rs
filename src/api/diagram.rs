@@ -1,10 +1,9 @@
 
-use regex::Regex;
-use reqwest::Response;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fmt::{self, Display, Formatter},
 };
 
 use super::{node::{CoggleApiNode, CoggleNodeResource}, CoggleApi};
