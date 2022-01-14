@@ -32,7 +32,7 @@ pub struct CoggleNodeUpdateProps {
 impl From<CoggleApiNode<'_>> for CoggleNodeUpdateProps {
     fn from(node: CoggleApiNode) -> Self {
         CoggleNodeUpdateProps {
-            parent: node.parent_id.into(),
+            parent: node.parent_id,
             text: node.text.into(),
             offset: node.offset.into(),
         }
