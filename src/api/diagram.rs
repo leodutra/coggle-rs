@@ -1,19 +1,22 @@
-
-
-
 use serde::{Deserialize, Serialize};
-use std::{
-    error::Error,
+use std::error::Error;
+
+use super::{
+    folder::CoggleFolder,
+    node::{CoggleApiNode, CoggleNodeResource},
+    CoggleApi,
 };
 
-use super::{node::{CoggleApiNode, CoggleNodeResource}, CoggleApi};
-    
-
-
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CoggleApiDiagram<'a> {
     pub api_client: &'a CoggleApi,
     pub id: String,
     pub title: String,
+    pub timestamp: Option<String>,
+    pub my_access: Option<Vec<String>>,
+    pub owner_id: Option<String>,
+    pub modified: Option<String>,
+    pub folder: Option<CoggleFolder>,
 }
 
 impl<'a> CoggleApiDiagram<'a> {
@@ -22,6 +25,11 @@ impl<'a> CoggleApiDiagram<'a> {
             api_client: coggle_api,
             id: diagram_resource.id.clone(),
             title: diagram_resource.title.clone(),
+            timestamp: None,
+            my_access: None,
+            owner_id: None,
+            modified: None,
+            folder: None,
         }
     }
 
@@ -57,7 +65,7 @@ impl<'a> CoggleApiDiagram<'a> {
                 &Body {},
             )
             .await?;
-            
+
         let nodes = node_resources
             .iter()
             .map(|node_resource| CoggleApiNode::new(self, node_resource))

@@ -1,18 +1,19 @@
-
 // use http::HTTP_CLIENT;
 use regex::Regex;
 use reqwest::Response;
-use serde::{de::DeserializeOwned, Serialize};
-use std::{
-    error::Error,
-};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::error::Error;
 
-use self::{http::HTTP_CLIENT, diagram::{CoggleApiDiagram, CoggleDiagramResource}, error::CoggleError};
+use self::{
+    diagram::{CoggleApiDiagram, CoggleDiagramResource},
+    error::CoggleError,
+    http::HTTP_CLIENT,
+};
 
 mod diagram;
 mod error;
+mod folder;
 mod http;
-mod misc;
 mod node;
 
 lazy_static! {
@@ -20,6 +21,7 @@ lazy_static! {
         Regex::new(r"^[a-z]+[a-z0-9-]{2,}$").expect("Organization name validator.");
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct CoggleApi {
     pub base_url: String,
     pub token: String,

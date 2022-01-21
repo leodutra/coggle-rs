@@ -1,13 +1,9 @@
-
 // use http::HTTP_CLIENT;
 
-
 use serde::{Deserialize, Serialize};
-use std::{
-    error::Error,
-};
+use std::error::Error;
 
-use super::{error::CoggleError, misc::CoggleOffset, diagram::CoggleApiDiagram};
+use super::{diagram::CoggleApiDiagram, error::CoggleError};
 
 const MAX_TEXT_LENGTH: usize = 3000;
 
@@ -28,39 +24,58 @@ pub struct CoggleNodeUpdateProps {
     pub parent: Option<String>,
 }
 
-
 impl From<CoggleApiNode<'_>> for CoggleNodeUpdateProps {
     fn from(node: CoggleApiNode) -> Self {
         CoggleNodeUpdateProps {
-            parent: node.parent_id,
+            parent: node.parent,
             text: node.text.into(),
             offset: node.offset.into(),
         }
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CoggleOffset {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CoggleApiNode<'a> {
     pub diagram: &'a CoggleApiDiagram<'a>,
-    pub id: String,
-    pub text: String,
-    pub offset: CoggleOffset,
-    pub children: Vec<CoggleApiNode<'a>>,
-    pub parent_id: Option<String>,
+
+    #[serde(rename(serialize = "_id"))]
+    pub id: String, // unique ID of the node
+    pub text: String,           // text of node
+    pub offset: CoggleOffset,   // offset from parent node
+    pub text_size: Option<f32>, // size of the text node
+    pub width: Option<f32>,     // width of node
+    pub colour: Option<String>, // colour of node
+    pub parent: Option<String>, // parent node id
+    pub children: Option<Vec<CoggleApiNode<'a>>>,
 }
 
 impl<'a> CoggleApiNode<'a> {
-    pub fn new(coggle_api_diagram: &'a CoggleApiDiagram, node_resource: &CoggleNodeResource) -> Self {
+    pub fn new(
+        coggle_api_diagram: &'a CoggleApiDiagram,
+        node_resource: &CoggleNodeResource,
+    ) -> Self {
         CoggleApiNode {
             diagram: coggle_api_diagram,
             id: node_resource.id.clone(),
             text: node_resource.text.clone(),
             offset: node_resource.offset.clone(),
-            children: node_resource
-                .children
-                .iter()
-                .map(|child_resource| CoggleApiNode::new(coggle_api_diagram, child_resource))
-                .collect(),
-            parent_id: node_resource.parent.clone(),
+            children: Some(
+                node_resource
+                    .children
+                    .iter()
+                    .map(|child_resource| CoggleApiNode::new(coggle_api_diagram, child_resource))
+                    .collect(),
+            ),
+            parent: node_resource.parent.clone(),
+            text_size: None,
+            width: None,
+            colour: None,
         }
     }
 
@@ -100,7 +115,7 @@ impl<'a> CoggleApiNode<'a> {
             .json()
             .await?;
         let mut api_node = CoggleApiNode::new(self.diagram, &node_resource);
-        api_node.parent_id = Some(self.id.clone());
+        api_node.parent = Some(self.id.clone());
         Ok(api_node)
     }
 
@@ -126,7 +141,7 @@ impl<'a> CoggleApiNode<'a> {
             .json()
             .await?;
         let mut api_node = CoggleApiNode::new(self.diagram, &node_resource);
-        api_node.parent_id = Some(self.id.clone());
+        api_node.parent = Some(self.id.clone());
         Ok(api_node)
     }
 
