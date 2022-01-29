@@ -9,6 +9,7 @@ use super::{
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CoggleApiDiagram<'a> {
+    #[serde(borrow)]
     pub api_client: &'a CoggleApi,
     pub id: String,
     pub title: String,
