@@ -40,7 +40,7 @@ pub struct CoggleOffset {
     pub y: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct CoggleApiNode<'a> {
     pub diagram: &'a CoggleApiDiagram<'a>,
 
