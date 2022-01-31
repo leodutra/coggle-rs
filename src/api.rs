@@ -21,16 +21,16 @@ lazy_static! {
         Regex::new(r"^[a-z]+[a-z0-9-]{2,}$").expect("Organization name validator.");
 }
 
-#[derive(Serialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct CoggleApi {
     pub base_url: String,
     pub token: String,
 }
 
-// impl<'de> Deserialize<'de> for CoggleApi {
+// impl<'a> Deserialize<'a> for CoggleApi {
 //     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 //     where
-//         D: serde::Deserializer<'de>,
+//         D: serde::Deserializer<'a>,
 //     {
 //         Ok(CoggleApi {
 //             base_url: String::new(),

@@ -7,10 +7,11 @@ use super::{
     CoggleApi,
 };
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CoggleApiDiagram<'a> {
-    // #[serde(borrow)]
-    pub api_client: &'a CoggleApi,
+    #[serde(skip)]
+    pub api_client: Option<&'a CoggleApi>,
+
     pub id: String,
     pub title: String,
     pub timestamp: Option<String>,
@@ -23,7 +24,7 @@ pub struct CoggleApiDiagram<'a> {
 impl<'a> CoggleApiDiagram<'a> {
     pub fn new(coggle_api: &'a CoggleApi, diagram_resource: &CoggleDiagramResource) -> Self {
         CoggleApiDiagram {
-            api_client: coggle_api,
+            api_client: Some(coggle_api),
             id: diagram_resource.id.clone(),
             title: diagram_resource.title.clone(),
             timestamp: None,
@@ -39,12 +40,13 @@ impl<'a> CoggleApiDiagram<'a> {
     }
 
     pub fn web_url(&self) -> String {
-        self.replace_id(&(self.api_client.base_url.clone() + "/diagram/:diagram"))
+        self.replace_id(&(self.api_client.unwrap().base_url.clone() + "/diagram/:diagram"))
     }
 
     pub async fn get_nodes(&self) -> Result<Vec<CoggleApiNode<'_>>, Box<dyn Error>> {
         let node_resources: Vec<CoggleNodeResource> = self
             .api_client
+            .unwrap()
             .get(&self.replace_id("/api/1/diagrams/:diagram/nodes"), "")
             .await?;
 
@@ -60,6 +62,7 @@ impl<'a> CoggleApiDiagram<'a> {
         struct Body {}
         let node_resources: Vec<CoggleNodeResource> = self
             .api_client
+            .unwrap()
             .put(
                 &self.replace_id("/api/1/diagrams/:diagram/nodes"),
                 "action=arrange",

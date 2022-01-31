@@ -45,7 +45,7 @@ pub struct CoggleApiNode<'a> {
     pub diagram: &'a CoggleApiDiagram<'a>,
 
     #[serde(rename(serialize = "_id"))]
-    pub id: String, // unique ID of the node
+    pub id: String,             // unique ID of the node
     pub text: String,           // text of node
     pub offset: CoggleOffset,   // offset from parent node
     pub text_size: Option<f32>, // size of the text node
@@ -106,6 +106,7 @@ impl<'a> CoggleApiNode<'a> {
         let node_resource = self
             .diagram
             .api_client
+            .unwrap()
             .post(
                 &self.replace_ids("/api/1/diagrams/:diagram/nodes"),
                 "",
@@ -132,6 +133,7 @@ impl<'a> CoggleApiNode<'a> {
         let node_resource = self
             .diagram
             .api_client
+            .unwrap()
             .post(
                 &self.replace_ids("/api/1/diagrams/:diagram/nodes"),
                 "",
