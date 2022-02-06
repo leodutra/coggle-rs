@@ -27,18 +27,6 @@ pub struct CoggleApi {
     pub token: String,
 }
 
-// impl<'a> Deserialize<'a> for CoggleApi {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'a>,
-//     {
-//         Ok(CoggleApi {
-//             base_url: String::new(),
-//             token: String::new(),
-//         })
-//     }
-// }
-
 impl CoggleApi {
     // FIXME: querystring
     pub async fn post<T: Serialize>(

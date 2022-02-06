@@ -52,7 +52,7 @@ pub struct CoggleApiNode<'a> {
     pub width: Option<f32>,     // width of node
     pub colour: Option<String>, // colour of node
     pub parent: Option<String>, // parent node id
-    pub children: Option<Vec<CoggleApiNode<'a>>>,
+    pub children: Vec<CoggleApiNode<'a>>,
 }
 
 impl<'a> CoggleApiNode<'a> {
@@ -65,13 +65,12 @@ impl<'a> CoggleApiNode<'a> {
             id: node_resource.id.clone(),
             text: node_resource.text.clone(),
             offset: node_resource.offset.clone(),
-            children: Some(
-                node_resource
-                    .children
-                    .iter()
-                    .map(|child_resource| CoggleApiNode::new(coggle_api_diagram, child_resource))
-                    .collect(),
-            ),
+            children: node_resource
+                .children
+                .iter()
+                .map(|child_resource| CoggleApiNode::new(coggle_api_diagram, child_resource))
+                .collect(),
+
             parent: node_resource.parent.clone(),
             text_size: None,
             width: None,
@@ -84,10 +83,10 @@ impl<'a> CoggleApiNode<'a> {
     }
 
     pub async fn add_child(
-        &self,
+        &mut self,
         text: &str,
         offset: Option<&CoggleOffset>,
-    ) -> Result<CoggleApiNode<'_>, Box<dyn Error>> {
+    ) -> Result<&CoggleApiNode<'_>, Box<dyn Error>> {
         if text.len() > MAX_TEXT_LENGTH {
             return Err(CoggleError::TextTooLong.into());
         }
@@ -117,7 +116,8 @@ impl<'a> CoggleApiNode<'a> {
             .await?;
         let mut api_node = CoggleApiNode::new(self.diagram, &node_resource);
         api_node.parent = Some(self.id.clone());
-        Ok(api_node)
+        self.children.push(api_node);
+        Ok(&self.children.last().unwrap())
     }
 
     pub async fn update(
