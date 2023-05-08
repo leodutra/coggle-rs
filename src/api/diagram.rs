@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
-use super::{api_client::CoggleApi, node::CoggleApiNode};
+use super::{ node::CoggleApiNode, CoggleApi};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CoggleApiDiagram<'a> {
-    pub api_client: &'a CoggleApi,
+pub struct CoggleApiDiagram {
+    // #[serde(borrow)]
+    pub api_client: CoggleApi,
     pub id: String,
     pub title: String,
 }
@@ -15,7 +16,7 @@ pub struct  DiagramResource {
     pub title: String,
 }
 
-impl CoggleApiDiagram<'_> {
+impl CoggleApiDiagram {
     pub fn new(coggle_api: &CoggleApi, diagram_resource: DiagramResource) -> Self {
         CoggleApiDiagram {
             api_client: coggle_api,
